@@ -25,11 +25,13 @@ const ProfilePage = () => {
     useEffect(() => {
         const fetchUserData = async (userId) => {
             try {
-                const docRef = doc(db, 'user', userId);
+                    console.log('Fetching user data for UID:', userId);
+                    const docRef = doc(db, 'user', userId);
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
+                        console.log('User data retrieved successfully:', data);
                     setUserData({
                         name: data.name || 'No Name',
                         email: data.email || 'No Email',
@@ -40,10 +42,13 @@ const ProfilePage = () => {
                     });
                     setIconColor(data.iconColor || '#6366f1');
                 } else {
-                    console.log('No user document found!');
+                        console.warn('No user document found! UID:', userId);
+                        console.log('Creating default data...');
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error);
+                    console.error('Error code:', error.code);
+                    console.error('Error message:', error.message);
             } finally {
                 setLoading(false);
             }
@@ -51,8 +56,10 @@ const ProfilePage = () => {
 
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
+                    console.log('User authenticated:', user.uid);
                 fetchUserData(user.uid);
             } else {
+                    console.warn('No user authenticated');
                 setLoading(false);
             }
         });
