@@ -1,17 +1,9 @@
-# 🏘️ Society Management System
-
+D  O  M  A  S
+ADITYA PANDEY
 A modern, responsive society management web app built using **React**, **Tailwind CSS**, and **Firebase**.  
 Easily manage members, communication, and settings — with real-time updates and a clean, intuitive UI.
 
 FOR BEST EXPERIENCE OPEN THE WEBSITE ON PC.
-
-🔗 **Live Demo:** [View Project](https://society-management-web.netlify.app/)
-
-
-incase the link dosent work use : [https://dulcet-kitsune-ef3f47.netlify.app/Login](https://society-management-web.netlify.app/)
-
-
-
 ---
 
 ## ✨ Features
@@ -62,22 +54,5 @@ incase the link dosent work use : [https://dulcet-kitsune-ef3f47.netlify.app/Log
 
 ---
 
-## 📦 Installation & Setup
-
-Clone the repository:
-```bash
-git clone https://github.com/Himal2242/Society_Management.git
-cd Society_Management
-
-Install dependencies:
-npm install
-
-⚠️ Important:
-After cloning, replace the Firebase config in:
-src/firebase.js
-with your own Firebase project's API keys and settings.
-
-Then, start the development server:
-npm run dev
 
 
