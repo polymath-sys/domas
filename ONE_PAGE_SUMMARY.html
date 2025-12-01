@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Domas — One Page Summary</title>
+  <style>
+    body{font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial; padding:28px; color:#111}
+    .card{max-width:800px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    h1{color:#0b2545}
+    ul{margin-left:18px}
+    pre{background:#f6f8fa;padding:10px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Domas — One-Page Summary</h1>
+    <p><strong>What it is:</strong> React SPA using Firebase Auth and Firestore (realtime) to manage user profiles and announcements.</p>
+
+    <h3>Key flows</h3>
+    <ul>
+      <li><strong>Registration:</strong> <code>createUserWithEmailAndPassword</code> -> <code>setDoc(user/{uid})</code>.</li>
+      <li><strong>Login:</strong> <code>signInWithEmailAndPassword</code>, tracked via <code>useAuthState(auth)</code>.</li>
+      <li><strong>Profile:</strong> <code>getDoc</code> / <code>updateDoc</code> on <code>user/{uid}</code>.</li>
+      <li><strong>Announcements:</strong> <code>onSnapshot</code> listener on <code>announcements</code> for realtime updates.</li>
+    </ul>
+
+    <h3>Files to show</h3>
+    <ul>
+      <li><code>src/firebase.jsx</code></li>
+      <li><code>src/Register.jsx</code></li>
+      <li><code>src/components/Profile/Profilepage.jsx</code></li>
+      <li><code>src/components/Rightsidebar.jsx</code></li>
+    </ul>
+
+    <h3>Quick debug checklist</h3>
+    <ul>
+      <li>Check Firestore rules for `permission-denied`.</li>
+      <li>Disable ad-blockers for `localhost` for `ERR_BLOCKED_BY_CLIENT` errors.</li>
+      <li>Verify `firebaseConfig` matches Project Settings.</li>
+    </ul>
+
+    <h3>Demo steps</h3>
+    <ol>
+      <li>Register a new user and show Firestore `user/{uid}` document.</li>
+      <li>Create an announcement from another browser or console.</li>
+      <li>Show right sidebar updating in real time.</li>
+    </ol>
+
+    <p style="margin-top:18px"><em>End of one-page summary</em></p>
+  </div>
+</body>
+</html>

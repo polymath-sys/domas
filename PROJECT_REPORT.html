@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Domas — Project Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; line-height:1.6; padding:32px; color:#111 }
+    h1,h2,h3 { color:#0b2545 }
+    pre { background:#f6f8fa; padding:12px; border-radius:6px; overflow:auto }
+    code { background:#f6f8fa; padding:2px 6px; border-radius:4px }
+    .container { max-width:900px; margin:0 auto }
+    .section { margin-bottom:28px }
+    ul { margin-left:20px }
+    .note { background:#fff4e6; border-left:4px solid #ffb74d; padding:12px; border-radius:6px }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Domas — Project Report</h1>
+    <p><em>Version: simplified explanation for assessment (Software Engineering)</em></p>
+
+    <div class="section">
+      <h2>1. Project Summary (elevator pitch)</h2>
+      <p>Domas is a small React-based web application for apartment / society management. It provides user registration and login (using Firebase Authentication), a user profile page (data stored in Firestore), and a right-hand sidebar that shows the logged-in user's details and recent announcements (announcements are delivered in real-time using Firestore's onSnapshot listener).</p>
+      <p>This report explains the code structure, technologies used, how data flows through the system, how to run and test the app locally, common issues encountered during development, and suggestions for future improvements.</p>
+    </div>
+
+    <div class="section">
+      <h2>2. Technologies and libraries used</h2>
+      <ul>
+        <li>React (v18) — UI library for building components.</li>
+        <li>Vite — development server and build tool.</li>
+        <li>Firebase (Auth + Firestore) — backend-as-a-service for authentication and database.</li>
+        <li><code>firebase</code> JS SDK used to initialize and use Auth and Firestore.</li>
+        <li>react-router — client-side routing.</li>
+        <li>react-firebase-hooks — convenience hooks for Auth state.</li>
+        <li>Tailwind CSS — utility-first CSS framework used for styling.</li>
+        <li>react-icons — icon components.</li>
+      </ul>
+      <p>Package versions are listed in <code>package.json</code>.</p>
+    </div>
+
+    <div class="section">
+      <h2>3. High-level architecture</h2>
+      <p>Frontend-only single page application built with React. Firebase handles two responsibilities:</p>
+      <ul>
+        <li>Authentication (email/password sign-up and sign-in).</li>
+        <li>Firestore: NoSQL document database used to store user profiles and announcements.</li>
+      </ul>
+      <p>Realtime features are implemented using Firestore listeners (<code>onSnapshot</code>) so announcements update immediately in the UI.</p>
+
+      <h3>Sequence (example: registration then view profile)</h3>
+      <ol>
+        <li>User registers using the registration form in <code>src/Register.jsx</code>.</li>
+        <li>The app calls <code>createUserWithEmailAndPassword(auth, email, password)</code>.</li>
+        <li>On success, app writes a user document to <code>user/{uid}</code> in Firestore via <code>setDoc</code>.</li>
+        <li>When the user navigates to the Profile page, the app listens for the authenticated user (Auth state) and fetches the <code>user/{uid}</code> document with <code>getDoc</code>.</li>
+        <li>RightSidebar attaches a real-time listener to <code>announcements</code> collection (ordered by <code>createdAt</code>) with <code>onSnapshot</code> and fetches the corresponding user name for each announcement by reading <code>user/{userId}</code>.</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>4. Important project files and what they do</h2>
+      <ul>
+        <li><code>src/firebase.jsx</code> — Firebase initialization and exports of <code>auth</code> and <code>db</code>.</li>
+        <li><code>src/main.jsx</code> — Application entry. Mounts the React app.</li>
+        <li><code>src/App.jsx</code> — Main router and top-level layout. Uses <code>useAuthState(auth)</code> from react-firebase-hooks.</li>
+        <li><code>src/Register.jsx</code> — Registration form and logic: creates user and writes Firestore <code>user/{uid}</code>.</li>
+        <li><code>src/Login.jsx</code> — Login form (calls Firebase Auth).</li>
+        <li><code>src/components/Profile/Profilepage.jsx</code> — Reads <code>user/{uid}</code> and updates profile via <code>updateDoc</code>.</li>
+        <li><code>src/components/Rightsidebar.jsx</code> — Displays user details and recent announcements using <code>onSnapshot</code>.</li>
+        <li><code>src/Cards/*</code>, <code>src/pages/*</code>, <code>src/components/ui/*</code> — UI components and pages.</li>
+        <li><code>package.json</code>, <code>vite.config.js</code>, <code>tailwind.config.js</code> — project/config files.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>5. Firestore data model and rules (recommended)</h2>
+      <p><strong>Collections used:</strong></p>
+      <ul>
+        <li><code>user</code> — documents keyed by Firebase UID. Example fields: <code>name, email, mobile, apartment, wing, members, createdAt, iconColor</code>.</li>
+        <li><code>announcements</code> — announcement documents. Example fields: <code>content, userId, createdAt</code>.</li>
+      </ul>
+
+      <p>Recommended Firestore rules (development-friendly and secure for authenticated reads):</p>
+      <pre><code>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /user/{uid} {
+      allow read, write: if request.auth != null &amp;&amp; request.auth.uid == uid;
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // tighten in production (e.g., only admin)
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+</code></pre>
+      <p>Explanation: the rules let logged-in users read announcements and only let a user read/write their own <code>user/{uid}</code> document.</p>
+    </div>
+
+    <div class="section">
+      <h2>6. Common problems and debugging notes (what we saw during development)</h2>
+      <ol>
+        <li><strong>"Firebase: Error (auth/configuration-not-found)"</strong>: usually caused by incorrect or missing Firebase config. Fix: verify <code>firebaseConfig</code> against Firebase Console.</li>
+        <li><strong>POST ... identitytoolkit ... 400 (Bad Request)</strong>: wrong API key or Auth not enabled. Fix: check API key and enable Email/Password sign-in in Firebase Console.</li>
+        <li><strong>net::ERR_BLOCKED_BY_CLIENT</strong>: a browser extension blocked requests to Google endpoints. Fix: disable extension or test in incognito mode.</li>
+        <li><strong>Missing or insufficient permissions</strong>: Firestore security rules are blocking read access. Fix: update rules to allow authenticated reads on <code>announcements</code>.</li>
+      </ol>
+      <p>We added robust logging to <code>RightSidebar</code> and <code>Profilepage</code> to help debug these issues during development.</p>
+    </div>
+
+    <div class="section">
+      <h2>7. How to run the project locally (step-by-step)</h2>
+      <p><strong>Prerequisites:</strong> Node.js (v16+), npm or yarn.</p>
+      <pre><code>cd /path/to/domas
+npm install
+
+npm run dev
+# open http://localhost:5173 (Vite dev server)
+</code></pre>
+      <p><strong>Firebase setup required:</strong></p>
+      <ol>
+        <li>Create a Firebase project and enable Authentication &gt; Email/Password.</li>
+        <li>Create Firestore database or set rules as above.</li>
+        <li>Add a Web app in Project Settings and copy the firebase config to <code>src/firebase.jsx</code>.</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>8. How the main flows work (in plain language)</h2>
+      <ul>
+        <li><strong>Registration</strong>: frontend calls Firebase Auth, on success writes <code>user/{uid}</code> in Firestore.</li>
+        <li><strong>Login</strong>: <code>useAuthState(auth)</code> tracks the user and displays protected pages.</li>
+        <li><strong>Profile page</strong>: reads <code>user/{uid}</code> and updates via <code>updateDoc</code>.</li>
+        <li><strong>Announcements</strong>: sidebar uses <code>onSnapshot</code> to listen to latest announcements and shows announcer name by reading <code>user/{userId}</code>.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>9. Testing &amp; verification</h2>
+      <p>Manual tests to run before demo:</p>
+      <ul>
+        <li>Register a new account and verify a <code>user/{uid}</code> document appears in Firestore.</li>
+        <li>Login and verify the profile page shows saved data.</li>
+        <li>Create an announcement and verify it appears in the sidebar in real time.</li>
+        <li>Test with an ad-blocker enabled to reproduce network blocking issues.</li>
+      </ul>
+      <p>Automated tests: none included; consider adding <code>vitest</code> or <code>jest</code> and React Testing Library.</p>
+    </div>
+
+    <div class="section">
+      <h2>10. Security and production notes</h2>
+      <ul>
+        <li>Do not commit Admin SDK private keys to source control.</li>
+        <li>Restrict API keys by browser referrers in production and tighten Firestore rules.</li>
+        <li>Restrict who can write announcements (custom claims or <code>admins</code> collection).</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>11. Future improvements (ideas)</h2>
+      <ul>
+        <li>Role-based access control (admins vs residents).</li>
+        <li>Input validation and server-side protections.</li>
+        <li>Add unit and end-to-end tests.</li>
+        <li>UX: skeleton loaders, better error pages, offline caching.</li>
+        <li>Audit logging for critical actions.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>12. How to explain this to your professor (short script)</h2>
+      <p>"This is a React single-page app that uses Firebase for authentication and Firestore as a realtime database. The app demonstrates user registration/login, persistent user profiles, and realtime announcements. The frontend uses Vite and Tailwind for quick development and styling. Security is provided by Firestore rules that restrict reads/writes to authenticated users and to owners of user documents. During development we handled common issues like blocked network calls (browser extensions) and incorrect Firebase configuration."</p>
+    </div>
+
+    <div class="section">
+      <h2>13. Where to look in the code during the demo</h2>
+      <ul>
+        <li><code>src/Register.jsx</code></li>
+        <li><code>src/Login.jsx</code></li>
+        <li><code>src/components/Profile/Profilepage.jsx</code></li>
+        <li><code>src/components/Rightsidebar.jsx</code></li>
+        <li><code>src/firebase.jsx</code></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>14. Files added by me (debugging)</h2>
+      <p>During debugging we added console logging and more robust error handling to <code>src/components/Rightsidebar.jsx</code> and <code>src/components/Profile/Profilepage.jsx</code>. A changelog can be produced if needed.</p>
+    </div>
+
+    <div class="section">
+      <h2>15. Contact / References</h2>
+      <ul>
+        <li>Firebase docs: https://firebase.google.com/docs</li>
+        <li>Firestore rules: https://firebase.google.com/docs/firestore/security/get-started</li>
+        <li>React + Vite: https://vitejs.dev/guide/</li>
+      </ul>
+    </div>
+
+    <p><em>End of report</em></p>
+  </div>
+</body>
+</html>
