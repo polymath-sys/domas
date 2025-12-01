@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { addDoc, collection, getDocs } from 'firebase/firestore';
+import { addDoc, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const Complain = () => {
@@ -30,11 +30,23 @@ const Complain = () => {
     };
 
     try {
-      await addDoc(collection(db, "complaints"), complaint);
-      setComplaints([...complaints, complaint]);
+      // Refresh complaints to get the new ID and data correctly from server or just re-fetch
+      // For simplicity, let's re-fetch or just add to state if we had the ID. 
+      // Since addDoc returns a ref with ID, we can do this:
+      const docRef = await addDoc(collection(db, "complaints"), complaint);
+      setComplaints([...complaints, { id: docRef.id, ...complaint }]);
       setNewComplain('');
     } catch (error) {
       console.error("Error adding complaint:", error);
+    }
+  };
+
+  const handleDeleteComplaint = async (id) => {
+    try {
+      await deleteDoc(doc(db, "complaints", id));
+      setComplaints(complaints.filter(complaint => complaint.id !== id));
+    } catch (error) {
+      console.error("Error deleting complaint:", error);
     }
   };
 
@@ -81,7 +93,15 @@ const Complain = () => {
                     <p className="text-gray-800 text-sm">{complaint.description}</p>
                     <div className="text-xs flex justify-between text-gray-500 mt-1">
                       <span>Status: <span className="font-semibold text-blue-600">{complaint.status}</span></span>
-                      <span>{new Date(complaint.timestamp?.seconds * 1000).toLocaleString()}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{new Date(complaint.timestamp?.seconds * 1000).toLocaleString()}</span>
+                        <button
+                          onClick={() => handleDeleteComplaint(complaint.id)}
+                          className="text-red-500 hover:text-red-700 font-medium ml-2"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </li>
                 ))}
